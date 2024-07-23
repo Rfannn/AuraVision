@@ -1,3 +1,4 @@
+
 # AuraVision (AV) 👁️‍🗨️
 
 AuraVision (AV) is a real-time speech-to-text demo tool designed to assist the deaf and hard-of-hearing community. It converts spoken words into text and displays them in real time. This demo is intended for use on Windows, Linux, and Mac PCs and supports English, Spanish, and Farsi. The final version will be developed as a hardware product using Vosk and Raspberry Pi.
@@ -44,7 +45,7 @@ Download Vosk language models and place them in the `C:\\your-path\\` directory.
 
 1. **Run the Script:**
 ```bash
-python aura_vision.py
+python main.py
 ```
 
 2. **Choose Language:**
@@ -87,6 +88,6 @@ Feel free to reach out to me via any of the following channels:
 - **Email:** tsmrfangg@gmail.com or erfannasehitabar.bis@gmail.com
 - **Telegram:** @GNS_Rfan
 - **Discord:** gnsrfan
-- **Instagram:** rfan__p
+- **Instagram:** @rfan__p
 
 Looking forward to connecting with you! 😊👍
