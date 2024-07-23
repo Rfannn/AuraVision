@@ -1,4 +1,3 @@
-
 # AuraVision (AV) 👁️‍🗨️
 
 AuraVision (AV) is a real-time speech-to-text demo tool designed to assist the deaf and hard-of-hearing community. It converts spoken words into text and displays them in real time. This demo is intended for use on Windows, Linux, and Mac PCs and supports English, Spanish, and Farsi. The final version will be developed as a hardware product using Vosk and Raspberry Pi.
@@ -13,16 +12,30 @@ AuraVision (AV) is a real-time speech-to-text demo tool designed to assist the d
 ## Installation 🛠️
 
 1. **Clone the Repository:**
-```bash
-git clone https://github.com/Rfannn/AuraVision.git
-cd AuraVision
-```
+   ```bash
+   git clone https://github.com/Rfannn/AuraVision.git
+   cd AuraVision
+   ```
 
 2. **Install Dependencies:**
-Ensure Python 3.x is installed, then install the required packages:
-```bash
-pip install vosk pyaudio deep-translator colorama
-```
+   Ensure Python 3.x is installed, then install the required packages:
+   ```bash
+   pip install vosk pyaudio deep-translator colorama
+   ```
+
+3. **Download Language Models:**
+   Download Vosk language models and place them in the `C:\\your-path\\` directory. [Vosk Models](https://alphacephei.com/vosk/models).
+
+4. **Alternative Installation (Windows):**
+   - Run `init.bat` to automatically set up the environment and install dependencies.
+   - Note: Make sure you have administrative privileges to execute batch files.
+
+5. **Alternative Installation (Linux/Mac):**
+   - Run `init.sh` to set up the environment and install dependencies.
+   - Remember to give execute permissions to the shell script:
+     ```bash
+     chmod +x init.sh
+     ```
 
 3. **Download Language Models:**
 Download Vosk language models and place them in the `C:\\your-path\\` directory. [Vosk Models](https://alphacephei.com/vosk/models).
