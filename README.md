@@ -50,9 +50,9 @@ python main.py
 
 2. **Choose Language:**
 Enter the language code when prompted:
-- `en` for English
-- `es` for Spanish
-- `fa` for Farsi
+- `en` for [English](https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip)
+- `es` for [Spanish](https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip)
+- `fa` for [Farsi](https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip)
 The script will load the appropriate model and start processing audio.
 
 3. **View Text:**
