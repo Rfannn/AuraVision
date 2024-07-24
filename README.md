@@ -1,6 +1,8 @@
 
 # AuraVision (AV) 👁️‍🗨️
 
+**Version 0.2.0**
+
 AuraVision (AV) is a real-time speech-to-text demo tool designed to assist the deaf and hard-of-hearing community. It converts spoken words into text and displays them in real time. This demo is intended for use on Windows, Linux, and Mac PCs and supports English, Spanish, and Farsi. The final version will be developed as a hardware product using Vosk and Raspberry Pi.
 
 ## Features 🌟
