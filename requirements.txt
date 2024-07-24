@@ -1,4 +1,7 @@
-vosk
-pyaudio
-deep-translator
+flask 
+flask-socketio 
+requests 
+vosk 
+pyaudio 
+deep-translator 
 colorama

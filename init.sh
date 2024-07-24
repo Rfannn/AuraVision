@@ -2,7 +2,7 @@
 echo "Setting up AuraVision environment..."
 
 # Install Python dependencies
-pip install vosk pyaudio deep-translator colorama
+pip install -r requirements.txt
 
 # Download Vosk language models (replace with actual download link)
 # Example: wget -O /path/to/stt/en.zip https://example.com/en.zip
