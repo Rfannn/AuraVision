@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit
 import colorama
 from colorama import Fore, Style
-
+# Setup the app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
