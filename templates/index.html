@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraVision</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+        }
+        .container {
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #aaa;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        #text-display {
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 1.5rem;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.3s ease;
+            line-height: 1.6;
+        }
+        #text-display.rtl {
+            direction: rtl;
+            text-align: right;
+            font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+        }
+        .placeholder { color: #666; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0.3; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+        .connected { background: #4caf50; }
+        .disconnected { background: #f44336; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>AuraVision</h1>
+        <p class="subtitle">Real-Time Speech-to-Text</p>
+        <div id="text-display">
+            <span class="placeholder">Waiting for speech input...</span>
+        </div>
+        <div class="status">
+            <span id="status-dot" class="status-dot disconnected"></span>
+            <span id="status-text">Connecting...</span>
+        </div>
+    </div>
+    <script>
+        var textDisplay = document.getElementById('text-display');
+        var statusDot = document.getElementById('status-dot');
+        var statusText = document.getElementById('status-text');
+        var currentLang = new URLSearchParams(window.location.search).get('lang') || 'en';
+
+        var socket = io();
+
+        socket.on('connect', function() {
+            statusDot.className = 'status-dot connected';
+            statusText.textContent = 'Connected';
+        });
+
+        socket.on('disconnect', function() {
+            statusDot.className = 'status-dot disconnected';
+            statusText.textContent = 'Disconnected';
+        });
+
+        socket.on('update_text', function(data) {
+            textDisplay.textContent = data.text;
+            textDisplay.className = 'fade-in' + (currentLang === 'fa' ? ' rtl' : '');
+        });
+    </script>
+</body>
+</html>
