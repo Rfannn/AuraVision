@@ -43,8 +43,9 @@ def get_headers() -> dict[str, str]:
 
 
 def send_text(text: str, lang: str, partial: bool = False) -> None:
-    print(Fore.CYAN + Style.BRIGHT + "Input: " + Style.RESET_ALL + Fore.YELLOW + text)
-    print(Style.RESET_ALL)
+    tag = "..." if partial else ">>>"
+    print(Fore.CYAN + Style.BRIGHT + f"  {tag} " + Style.RESET_ALL + Fore.YELLOW + text)
+    print(Style.RESET_ALL, end="")
 
     try:
         resp = requests.post(
@@ -61,81 +62,24 @@ def send_text(text: str, lang: str, partial: bool = False) -> None:
 
 
 def process_audio(recognizer: KaldiRecognizer, stream: pyaudio.Stream, lang: str) -> None:
+    last_final = ""
     while not stop_event.is_set():
         try:
             data = stream.read(FRAMES_PER_BUFFER, exception_on_overflow=False)
             if recognizer.AcceptWaveform(data):
                 result = json.loads(recognizer.Result())
-                text = result.get("text", "")
-                if text:
+                text = result.get("text", "").strip()
+                if text and text != last_final:
+                    last_final = text
                     send_text(text, lang, partial=False)
             else:
                 partial = json.loads(recognizer.PartialResult())
-                partial_text = partial.get("partial", "")
-                if partial_text:
+                partial_text = partial.get("partial", "").strip()
+                if partial_text and partial_text != last_final:
                     send_text(partial_text, lang, partial=True)
         except OSError as e:
             print(Fore.RED + f"Audio stream error: {e}" + Style.RESET_ALL)
             break
-
-
-def list_microphones() -> list[dict[str, Any]]:
-    mic = pyaudio.PyAudio()
-    devices = []
-    for i in range(mic.get_device_count()):
-        info = mic.get_device_info_by_index(i)
-        if info["maxInputChannels"] > 0:
-            devices.append({
-                "index": i,
-                "name": info["name"],
-                "channels": info["maxInputChannels"],
-                "rate": int(info["defaultSampleRate"]),
-            })
-    mic.terminate()
-    return devices
-
-
-def choose_microphone() -> Optional[int]:
-    devices = list_microphones()
-
-    if not devices:
-        print(Fore.RED + "No microphones found." + Style.RESET_ALL)
-        return None
-
-    print(Fore.CYAN + "Available microphones:" + Style.RESET_ALL)
-    print()
-    for i, d in enumerate(devices, 1):
-        print(f"  {Fore.GREEN}{i}{Style.RESET_ALL}. {d['name']}  {Fore.YELLOW}({d['channels']}ch, {d['rate']}Hz){Style.RESET_ALL}")
-    print()
-
-    default_idx = None
-    mic = pyaudio.PyAudio()
-    try:
-        default_idx = mic.get_default_input_device_info()["index"]
-        default_name = mic.get_device_info_by_index(default_idx)["name"]
-        print(f"  {Fore.CYAN}Default: {default_name}{Style.RESET_ALL}")
-    except OSError:
-        pass
-    finally:
-        mic.terminate()
-
-    while True:
-        prompt = "Choose microphone"
-        if default_idx is not None:
-            prompt += f" (Enter for default)"
-        prompt += ": "
-        choice = input(prompt).strip()
-
-        if not choice and default_idx is not None:
-            return default_idx
-
-        try:
-            idx = int(choice)
-            if 1 <= idx <= len(devices):
-                return devices[idx - 1]["index"]
-        except ValueError:
-            pass
-        print(Fore.RED + f"Invalid choice. Enter 1-{len(devices)}." + Style.RESET_ALL)
 
 
 def choose_model() -> dict[str, str]:
@@ -166,6 +110,20 @@ def choose_model() -> dict[str, str]:
         print(Fore.RED + f"Invalid choice. Enter a number between 1 and {len(models)}." + Style.RESET_ALL)
 
 
+def get_default_mic() -> Optional[int]:
+    pa = pyaudio.PyAudio()
+    try:
+        idx = pa.get_default_input_device_info()["index"]
+        name = pa.get_device_info_by_index(idx)["name"]
+        print(Fore.CYAN + f"  Microphone: {name}" + Style.RESET_ALL)
+        return idx
+    except OSError:
+        print(Fore.YELLOW + "  No default microphone found" + Style.RESET_ALL)
+        return None
+    finally:
+        pa.terminate()
+
+
 def main() -> None:
     print(Fore.CYAN + "=" * 50 + Style.RESET_ALL)
     print(Fore.CYAN + "  AuraVision - Real-Time Speech-to-Text" + Style.RESET_ALL)
@@ -176,7 +134,7 @@ def main() -> None:
     model_path = selected["path"]
     lang = selected["lang"]
 
-    mic_index = choose_microphone()
+    mic_index = get_default_mic()
 
     print()
     print(Fore.GREEN + f"Loading: {selected['name']}..." + Style.RESET_ALL)
@@ -195,7 +153,7 @@ def main() -> None:
     )
     stream.start_stream()
 
-    print(Fore.GREEN + "Listening... Press Ctrl+C to stop." + Style.RESET_ALL)
+    print(Fore.GREEN + "Listening... Press Ctrl+C to stop.\n" + Style.RESET_ALL)
 
     audio_thread = threading.Thread(
         target=process_audio, args=(recognizer, stream, lang), daemon=True
