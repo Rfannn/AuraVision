@@ -1,42 +1,99 @@
 # Contributing to AuraVision
 
-Thanks for your interest in contributing! Here's how to get started.
+Thanks for your interest! Here's everything you need to get started.
 
 ## Development Setup
 
-1. Fork and clone the repo
-2. Run `./init.sh` (or `init.bat` on Windows)
-3. Create a branch for your change:
+### Prerequisites
+
+- Python 3.8+
+- `portaudio19-dev` (Linux: `sudo apt install portaudio19-dev`)
+- Microphone access
+
+### Local Setup
+
+```bash
+git clone https://github.com/Rfannn/AuraVision.git
+cd AuraVision
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### Docker Setup (web server only)
+
+```bash
+docker compose up --build
+```
+
+Still need to run `main.py` on the host for microphone access.
+
+### Running
+
+You need two terminals:
+
+```bash
+# Terminal 1
+python app.py
+
+# Terminal 2
+python main.py
+```
+
+Open `http://localhost:5000`.
+
+## Making Changes
+
+1. Create a branch:
    ```bash
    git checkout -b feature/your-feature
    ```
-4. Make your changes
-5. Test locally with both `python app.py` and `python main.py`
+2. Make your changes
+3. Test with both `app.py` and `main.py`
+4. Commit with a clear message:
+   ```bash
+   git commit -m "feat: add new feature"
+   ```
+5. Push and open a PR:
+   ```bash
+   git push origin feature/your-feature
+   ```
 
-## Guidelines
+### Commit Convention
 
-- Keep changes focused — one feature or fix per PR
-- Follow existing code style (no linter configured yet, but stay consistent)
-- Update the README if you add user-facing features
-- Test on at least one platform before submitting
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-## Reporting Issues
+- `feat:` — new feature
+- `fix:` — bug fix
+- `docs:` — documentation only
+- `refactor:` — code change that neither fixes a bug nor adds a feature
+- `chore:` — build, CI, or tooling changes
 
-Open an issue on GitHub with:
-- What you expected to happen
-- What actually happened
-- Steps to reproduce
-- Your OS and Python version
+## Code Style
 
-## Ideas / Feature Requests
+- Python: follow PEP 8, 4-space indent
+- JavaScript: semicolons, `var`/`let`/`const`, no framework
+- Keep functions focused — one thing per function
+- No comments unless the logic is non-obvious
 
-Open an issue with the `enhancement` label. Describe the use case, not just the solution.
+## Reporting Bugs
 
-## Areas Where Help Is Needed
+Open an issue with:
 
-- Raspberry Pi hardware integration
-- Additional language support
-- UI/UX improvements (accessibility, mobile layout)
-- Performance optimization for low-end devices
-- Testing infrastructure
-- Documentation and translations
+1. What you expected
+2. What happened
+3. Steps to reproduce
+4. OS, Python version, browser
+
+## Requesting Features
+
+Open an issue with the `enhancement` label. Describe the **use case**, not just the solution.
+
+## What We Need Help With
+
+- [ ] Raspberry Pi integration & hardware case
+- [ ] Additional language support
+- [ ] Accessibility (screen reader, keyboard navigation)
+- [ ] Testing infrastructure (pytest, CI)
+- [ ] Documentation translations
+- [ ] Performance profiling on low-end devices
