@@ -29,7 +29,7 @@ logger = logging.getLogger("auravision")
 app = Flask(__name__, static_folder="static")
 app.config["SECRET_KEY"] = SECRET_KEY
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading", logger=False, engineio_logger=False)
 
 detected_lang: str = "en"
 
