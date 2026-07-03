@@ -42,12 +42,14 @@ curl -O https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip
 unzip vosk-model-small-fa-0.5.zip -d models/
 ```
 
-| Language | Model | Size |
-|----------|-------|------|
-| English | [vosk-model-small-en-us-0.15](https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip) | 40 MB |
-| English (large) | [vosk-model-en-us-0.22](https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip) | 1.8 GB |
-| Spanish | [vosk-model-small-es-0.42](https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip) | 39 MB |
-| Farsi | [vosk-model-small-fa-0.5](https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip) | 47 MB |
+| Language | Model | Size | Notes |
+|----------|-------|------|-------|
+| English | [vosk-model-small-en-us-0.15](https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip) | 40 MB | Fast, good for low-end devices |
+| English | [vosk-model-en-us-0.22](https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip) | 1.8 GB | Better accuracy |
+| English | [vosk-model-en-us-0.42-gigaspeech](https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip) | 2.4 GB | Best accuracy, needs 4GB+ RAM |
+| Spanish | [vosk-model-small-es-0.42](https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip) | 39 MB | |
+| Farsi | [vosk-model-small-fa-0.5](https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip) | 47 MB | Fast, good for low-end devices |
+| Farsi | [vosk-model-fa-0.42](https://alphacephei.com/vosk/models/vosk-model-fa-0.42.zip) | 1.9 GB | Best accuracy, needs 4GB+ RAM |
 
 Any Vosk model works — the app scans `models/` and lets you choose.
 

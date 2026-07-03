@@ -7,8 +7,10 @@ MODELS_DIR = os.path.join(BASE_DIR, "models")
 MODEL_DOWNLOAD_URLS = {
     "en": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
     "en-large": "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip",
+    "en-gigaspeech": "https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip",
     "es": "https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip",
     "fa": "https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip",
+    "fa-large": "https://alphacephei.com/vosk/models/vosk-model-fa-0.42.zip",
 }
 
 AUDIO_RATE = 16000
