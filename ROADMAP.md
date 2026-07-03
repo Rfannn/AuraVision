@@ -2,7 +2,7 @@
 
 Progress toward a production-ready accessibility tool.
 
-## v0.3.0 — Configuration & Usability ✅
+## v0.3.0 — Configuration & Usability
 
 - [x] Centralized config (`config.py`)
 - [x] Environment variables (`AV_PORT`, `AV_DEBUG`, etc.)
@@ -13,7 +13,7 @@ Progress toward a production-ready accessibility tool.
 - [ ] CLI arguments (`--lang fa`, `--model path`)
 - [ ] Auto-download models on first run
 
-## v0.4.0 — UI Improvements ✅
+## v0.4.0 — UI & Microphone
 
 - [x] Dark theme with grid background
 - [x] RTL support for Farsi (Noto Sans Arabic)
@@ -21,31 +21,41 @@ Progress toward a production-ready accessibility tool.
 - [x] Audio visualizer animation
 - [x] Mobile-responsive layout
 - [x] Language auto-detection badge
-- [ ] Language selector in browser UI
+- [x] Microphone device picker
+- [x] Real-time audio level display
+- [x] Partial/interim text display
+- [x] Export transcript to `.txt`
+- [x] ARIA labels and keyboard navigation
 - [ ] Light/dark theme toggle
-- [ ] Screen reader support (ARIA labels)
+- [ ] Language selector in browser UI
 
-## v0.5.0 — Deployment ✅
+## v0.5.0 — Deployment & Quality
 
-- [x] Docker image (Python 3.11-slim + portaudio)
+- [x] Docker image (gunicorn + eventlet)
 - [x] Docker Compose with model volume mount
+- [x] Docker HEALTHCHECK
+- [x] Auth token for `/update` endpoint
+- [x] Structured logging (replaces print)
+- [x] Type hints on all functions
+- [x] pytest test suite
+- [x] CI/CD pipeline (ruff + pytest + Docker build)
+- [x] CHANGELOG, SECURITY.md, issue/PR templates
+- [x] CSS/JS split from HTML
 - [ ] ARM-optimized build for Raspberry Pi
 - [ ] Systemd service file
 - [ ] 3D-printable hardware case
-- [ ] Sleep/wake power management
 
 ## v0.6.0 — Advanced Features
 
 - [ ] Multi-language simultaneous recognition
 - [ ] Word-level confidence scores
-- [ ] Export transcript to `.txt` / `.srt`
 - [ ] WebSocket auto-reconnect
 - [ ] Monitoring dashboard (audio levels, model stats)
+- [ ] ruff linting in CI (currently manual)
 
 ## v1.0.0 — Production Release
 
-- [ ] Full test suite (pytest)
-- [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Raspberry Pi hardware kit
 - [ ] Multi-language documentation (EN, FA, ES)
 - [ ] Performance benchmarks
+- [ ] Code coverage reporting

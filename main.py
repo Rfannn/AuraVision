@@ -2,16 +2,18 @@ import json
 import sys
 import threading
 import signal
+import logging
+from typing import Any, Optional
 
 import pyaudio
 from vosk import Model, KaldiRecognizer
 import colorama
 from colorama import Fore, Style
 import requests
-import logging
 
 from config import (
     MODELS_DIR,
+    AUTH_TOKEN,
     get_available_models,
     AUDIO_RATE,
     AUDIO_CHANNELS,
@@ -21,26 +23,44 @@ from config import (
 )
 
 colorama.init()
-logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.ERROR))
-logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=getattr(logging, LOG_LEVEL, logging.ERROR),
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("auravision.main")
 
 FLASK_SERVER_URL = f"http://localhost:{FLASK_PORT}/update"
 
 stop_event = threading.Event()
 
 
-def display_text(text, lang):
+def get_headers() -> dict[str, str]:
+    headers: dict[str, str] = {"Content-Type": "application/json"}
+    if AUTH_TOKEN:
+        headers["X-Auth-Token"] = AUTH_TOKEN
+    return headers
+
+
+def send_text(text: str, lang: str, partial: bool = False) -> None:
     print(Fore.CYAN + Style.BRIGHT + "Input: " + Style.RESET_ALL + Fore.YELLOW + text)
     print(Style.RESET_ALL)
 
     try:
-        resp = requests.post(FLASK_SERVER_URL, json={"text": text, "lang": lang}, timeout=2)
+        resp = requests.post(
+            FLASK_SERVER_URL,
+            json={"text": text, "lang": lang, "partial": partial},
+            headers=get_headers(),
+            timeout=2,
+        )
         resp.raise_for_status()
+    except requests.exceptions.ConnectionError:
+        print(Fore.RED + "Cannot connect to server. Is app.py running?" + Style.RESET_ALL)
     except requests.exceptions.RequestException as e:
-        print(Fore.RED + f"Failed to send text to server: {e}" + Style.RESET_ALL)
+        print(Fore.RED + f"Failed to send text: {e}" + Style.RESET_ALL)
 
 
-def process_audio(recognizer, stream, lang):
+def process_audio(recognizer: KaldiRecognizer, stream: pyaudio.Stream, lang: str) -> None:
     while not stop_event.is_set():
         try:
             data = stream.read(FRAMES_PER_BUFFER, exception_on_overflow=False)
@@ -48,13 +68,77 @@ def process_audio(recognizer, stream, lang):
                 result = json.loads(recognizer.Result())
                 text = result.get("text", "")
                 if text:
-                    display_text(text, lang)
+                    send_text(text, lang, partial=False)
+            else:
+                partial = json.loads(recognizer.PartialResult())
+                partial_text = partial.get("partial", "")
+                if partial_text:
+                    send_text(partial_text, lang, partial=True)
         except OSError as e:
             print(Fore.RED + f"Audio stream error: {e}" + Style.RESET_ALL)
             break
 
 
-def choose_model():
+def list_microphones() -> list[dict[str, Any]]:
+    mic = pyaudio.PyAudio()
+    devices = []
+    for i in range(mic.get_device_count()):
+        info = mic.get_device_info_by_index(i)
+        if info["maxInputChannels"] > 0:
+            devices.append({
+                "index": i,
+                "name": info["name"],
+                "channels": info["maxInputChannels"],
+                "rate": int(info["defaultSampleRate"]),
+            })
+    mic.terminate()
+    return devices
+
+
+def choose_microphone() -> Optional[int]:
+    devices = list_microphones()
+
+    if not devices:
+        print(Fore.RED + "No microphones found." + Style.RESET_ALL)
+        return None
+
+    print(Fore.CYAN + "Available microphones:" + Style.RESET_ALL)
+    print()
+    for i, d in enumerate(devices, 1):
+        print(f"  {Fore.GREEN}{i}{Style.RESET_ALL}. {d['name']}  {Fore.YELLOW}({d['channels']}ch, {d['rate']}Hz){Style.RESET_ALL}")
+    print()
+
+    default_idx = None
+    mic = pyaudio.PyAudio()
+    try:
+        default_idx = mic.get_default_input_device_info()["index"]
+        default_name = mic.get_device_info_by_index(default_idx)["name"]
+        print(f"  {Fore.CYAN}Default: {default_name}{Style.RESET_ALL}")
+    except OSError:
+        pass
+    finally:
+        mic.terminate()
+
+    while True:
+        prompt = "Choose microphone"
+        if default_idx is not None:
+            prompt += f" (Enter for default)"
+        prompt += ": "
+        choice = input(prompt).strip()
+
+        if not choice and default_idx is not None:
+            return default_idx
+
+        try:
+            idx = int(choice)
+            if 1 <= idx <= len(devices):
+                return devices[idx - 1]["index"]
+        except ValueError:
+            pass
+        print(Fore.RED + f"Invalid choice. Enter 1-{len(devices)}." + Style.RESET_ALL)
+
+
+def choose_model() -> dict[str, str]:
     models = get_available_models()
 
     if not models:
@@ -62,10 +146,6 @@ def choose_model():
         print()
         print("Download Vosk models from: https://alphacephei.com/vosk/models")
         print(f"Extract them into: {MODELS_DIR}")
-        print()
-        print("Example:")
-        print("  1. Download vosk-model-small-fa-0.5.zip")
-        print("  2. Extract so you have models/vosk-model-small-fa-0.5/")
         sys.exit(1)
 
     print(Fore.CYAN + "Available models:" + Style.RESET_ALL)
@@ -86,7 +166,7 @@ def choose_model():
         print(Fore.RED + f"Invalid choice. Enter a number between 1 and {len(models)}." + Style.RESET_ALL)
 
 
-def main():
+def main() -> None:
     print(Fore.CYAN + "=" * 50 + Style.RESET_ALL)
     print(Fore.CYAN + "  AuraVision - Real-Time Speech-to-Text" + Style.RESET_ALL)
     print(Fore.CYAN + "=" * 50 + Style.RESET_ALL)
@@ -95,6 +175,8 @@ def main():
     selected = choose_model()
     model_path = selected["path"]
     lang = selected["lang"]
+
+    mic_index = choose_microphone()
 
     print()
     print(Fore.GREEN + f"Loading: {selected['name']}..." + Style.RESET_ALL)
@@ -109,15 +191,18 @@ def main():
         rate=AUDIO_RATE,
         input=True,
         frames_per_buffer=FRAMES_PER_BUFFER,
+        input_device_index=mic_index,
     )
     stream.start_stream()
 
     print(Fore.GREEN + "Listening... Press Ctrl+C to stop." + Style.RESET_ALL)
 
-    audio_thread = threading.Thread(target=process_audio, args=(recognizer, stream, lang), daemon=True)
+    audio_thread = threading.Thread(
+        target=process_audio, args=(recognizer, stream, lang), daemon=True
+    )
     audio_thread.start()
 
-    def shutdown(sig, frame):
+    def shutdown(sig: int, frame: object) -> None:
         print(Fore.RED + "\nExiting..." + Style.RESET_ALL)
         stop_event.set()
         stream.stop_stream()

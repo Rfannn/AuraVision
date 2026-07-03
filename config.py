@@ -1,10 +1,14 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv()
 
-MODELS_DIR = os.path.join(BASE_DIR, "models")
+BASE_DIR = Path(__file__).parent
 
-MODEL_DOWNLOAD_URLS = {
+MODELS_DIR = BASE_DIR / "models"
+
+MODEL_DOWNLOAD_URLS: dict[str, str] = {
     "en": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
     "en-large": "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip",
     "en-gigaspeech": "https://alphacephei.com/vosk/models/vosk-model-en-us-0.42-gigaspeech.zip",
@@ -16,18 +20,21 @@ MODEL_DOWNLOAD_URLS = {
 AUDIO_RATE = 16000
 AUDIO_CHANNELS = 1
 AUDIO_FORMAT = "paInt16"
-FRAMES_PER_BUFFER = 8192
+FRAMES_PER_BUFFER = 4096
 
-FLASK_HOST = "0.0.0.0"
-FLASK_PORT = int(os.environ.get("AV_PORT", 5000))
-FLASK_DEBUG = os.environ.get("AV_DEBUG", "false").lower() == "true"
+FLASK_HOST = os.getenv("AV_HOST", "0.0.0.0")
+FLASK_PORT = int(os.getenv("AV_PORT", "5000"))
+FLASK_DEBUG = os.getenv("AV_DEBUG", "false").lower() == "true"
 
-SECRET_KEY = os.environ.get("AV_SECRET_KEY", os.urandom(24).hex())
+SECRET_KEY = os.getenv("AV_SECRET_KEY", os.urandom(24).hex())
+AUTH_TOKEN = os.getenv("AV_AUTH_TOKEN", "")
 
-LOG_LEVEL = os.environ.get("AV_LOG_LEVEL", "ERROR")
+LOG_LEVEL = os.getenv("AV_LOG_LEVEL", "ERROR")
+
+KNOWN_LANGS = {"en", "es", "fa"}
 
 
-def detect_lang(model_name):
+def detect_lang(model_name: str) -> str:
     name = model_name.lower()
     if "fa" in name or "farsi" in name or "persian" in name:
         return "fa"
@@ -38,14 +45,13 @@ def detect_lang(model_name):
     return "unknown"
 
 
-def get_available_models():
-    if not os.path.isdir(MODELS_DIR):
+def get_available_models() -> list[dict[str, str]]:
+    if not MODELS_DIR.is_dir():
         return []
 
     models = []
-    for entry in sorted(os.listdir(MODELS_DIR)):
-        path = os.path.join(MODELS_DIR, entry)
-        if os.path.isdir(path):
-            lang = detect_lang(entry)
-            models.append({"name": entry, "path": path, "lang": lang})
+    for entry in sorted(MODELS_DIR.iterdir()):
+        if entry.is_dir():
+            lang = detect_lang(entry.name)
+            models.append({"name": entry.name, "path": str(entry), "lang": lang})
     return models

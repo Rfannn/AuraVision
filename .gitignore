@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+*.pyo
 *.egg-info/
 dist/
 build/
@@ -22,3 +23,7 @@ env/
 *~
 .DS_Store
 Thumbs.db
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
