@@ -11,11 +11,10 @@ import requests
 import logging
 
 from config import (
-    MODEL_PATHS,
-    MODEL_DOWNLOAD_URLS,
+    MODELS_DIR,
+    get_available_models,
     AUDIO_RATE,
     AUDIO_CHANNELS,
-    AUDIO_FORMAT,
     FRAMES_PER_BUFFER,
     FLASK_PORT,
     LOG_LEVEL,
@@ -56,24 +55,36 @@ def process_audio(recognizer, stream, lang):
             break
 
 
-def check_model(lang):
-    from os.path import isdir
+def choose_model():
+    models = get_available_models()
 
-    model_path = MODEL_PATHS.get(lang)
-    if not model_path:
-        return None
+    if not models:
+        print(Fore.RED + "No models found in models/ directory." + Style.RESET_ALL)
+        print()
+        print("Download Vosk models from: https://alphacephei.com/vosk/models")
+        print(f"Extract them into: {MODELS_DIR}")
+        print()
+        print("Example:")
+        print("  1. Download vosk-model-small-fa-0.5.zip")
+        print("  2. Extract so you have models/vosk-model-small-fa-0.5/")
+        sys.exit(1)
 
-    if isdir(model_path):
-        return model_path
+    print(Fore.CYAN + "Available models:" + Style.RESET_ALL)
+    print()
+    for i, m in enumerate(models, 1):
+        lang_label = f"[{m['lang'].upper()}]" if m["lang"] != "unknown" else "[?]"
+        print(f"  {Fore.GREEN}{i}{Style.RESET_ALL}. {m['name']}  {Fore.YELLOW}{lang_label}{Style.RESET_ALL}")
+    print()
 
-    url = MODEL_DOWNLOAD_URLS.get(lang)
-    if not url:
-        return None
-
-    print(Fore.YELLOW + f"Model not found at: {model_path}" + Style.RESET_ALL)
-    print(Fore.YELLOW + f"Download it from: {url}" + Style.RESET_ALL)
-    print(Fore.YELLOW + f"Extract to: {MODEL_PATHS.get(lang, 'models/<model-name>')}" + Style.RESET_ALL)
-    return None
+    while True:
+        choice = input(f"Choose model (1-{len(models)}): ").strip()
+        try:
+            idx = int(choice)
+            if 1 <= idx <= len(models):
+                return models[idx - 1]
+        except ValueError:
+            pass
+        print(Fore.RED + f"Invalid choice. Enter a number between 1 and {len(models)}." + Style.RESET_ALL)
 
 
 def main():
@@ -81,18 +92,13 @@ def main():
     print(Fore.CYAN + "  AuraVision - Real-Time Speech-to-Text" + Style.RESET_ALL)
     print(Fore.CYAN + "=" * 50 + Style.RESET_ALL)
     print()
-    print("Available languages: en, es, fa")
-    lang = input("Choose language: ").strip().lower()
 
-    if lang not in MODEL_PATHS:
-        print(Fore.RED + "Invalid language. Choose en, es, or fa." + Style.RESET_ALL)
-        sys.exit(1)
+    selected = choose_model()
+    model_path = selected["path"]
+    lang = selected["lang"]
 
-    model_path = check_model(lang)
-    if not model_path:
-        sys.exit(1)
-
-    print(Fore.GREEN + f"Loading {lang} model..." + Style.RESET_ALL)
+    print()
+    print(Fore.GREEN + f"Loading: {selected['name']}..." + Style.RESET_ALL)
     model = Model(model_path)
     recognizer = KaldiRecognizer(model, AUDIO_RATE)
     print(Fore.GREEN + "Model loaded." + Style.RESET_ALL)

@@ -34,7 +34,7 @@ init.bat
 
 ### Download Language Models
 
-Download from [Vosk Models](https://alphacephei.com/vosk/models) and extract into the `models/` directory:
+Download from [Vosk Models](https://alphacephei.com/vosk/models) and extract into the `models/` directory. Any number of models works — you pick from the list at startup.
 
 | Language | Model | Size |
 |----------|-------|------|
@@ -43,19 +43,25 @@ Download from [Vosk Models](https://alphacephei.com/vosk/models) and extract int
 | Spanish | [vosk-model-small-es-0.42](https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip) | 39 MB |
 | Farsi | [vosk-model-small-fa-0.5](https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip) | 47 MB |
 
+Example:
+```bash
+# Download and extract Farsi model
+curl -O https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip
+unzip vosk-model-small-fa-0.5.zip -d models/
+# Now you have models/vosk-model-small-fa-0.5/
+```
+
 ### Run
 
 Start the web server and speech recognition in separate terminals:
 
 ```bash
-# Terminal 1 - Web server
-source venv/bin/activate   # or venv\Scripts\activate on Windows
-python app.py
-
-# Terminal 2 - Speech recognition
+# Terminal 2 - Speech recognition (shows model picker)
 source venv/bin/activate
 python main.py
 ```
+
+When you run `main.py`, it scans the `models/` directory and shows a numbered list of all available models. Pick one by entering its number.
 
 Open [http://localhost:5000](http://localhost:5000) in your browser.
 
