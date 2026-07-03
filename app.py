@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import colorama
 from colorama import Fore, Style
@@ -13,6 +13,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 colorama.init()
 
+detected_lang = "en"
+
 
 @app.route("/")
 def index():
@@ -21,16 +23,23 @@ def index():
 
 @app.route("/update", methods=["POST"])
 def update():
+    global detected_lang
     data = request.get_json(silent=True)
     if not data or "text" not in data:
         return jsonify(success=False, error="No text provided"), 400
 
     text = data["text"].strip()
+    lang = data.get("lang", "en")
+
     if not text:
         return jsonify(success=False, error="Empty text"), 400
 
+    if lang != detected_lang:
+        detected_lang = lang
+        socketio.emit("lang_change", {"lang": lang})
+
     print(Fore.GREEN + "Received text: " + Style.RESET_ALL + text)
-    socketio.emit("update_text", {"text": text})
+    socketio.emit("update_text", {"text": text, "lang": lang})
     return jsonify(success=True)
 
 

@@ -30,12 +30,11 @@ stop_event = threading.Event()
 
 
 def display_text(text, lang):
-    display = text[::-1] if lang == "fa" else text
-    print(Fore.CYAN + Style.BRIGHT + "Input: " + Style.RESET_ALL + Fore.YELLOW + display)
+    print(Fore.CYAN + Style.BRIGHT + "Input: " + Style.RESET_ALL + Fore.YELLOW + text)
     print(Style.RESET_ALL)
 
     try:
-        resp = requests.post(FLASK_SERVER_URL, json={"text": display}, timeout=2)
+        resp = requests.post(FLASK_SERVER_URL, json={"text": text, "lang": lang}, timeout=2)
         resp.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(Fore.RED + f"Failed to send text to server: {e}" + Style.RESET_ALL)

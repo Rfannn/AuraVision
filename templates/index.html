@@ -3,112 +3,557 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraVision</title>
+    <title>AuraVision — Real-Time Speech-to-Text</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --bg-card-hover: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-active: rgba(99, 179, 237, 0.4);
+            --text-primary: #e8e8ed;
+            --text-secondary: #8888a0;
+            --text-muted: #55556a;
+            --accent: #63b3ed;
+            --accent-glow: rgba(99, 179, 237, 0.15);
+            --green: #68d391;
+            --red: #fc8181;
+            --yellow: #f6e05e;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%);
+            --font-latin: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-arabic: 'Noto Sans Arabic', 'Segoe UI', 'Tahoma', sans-serif;
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: var(--font-latin);
             min-height: 100vh;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: #fff;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
         }
-        .container {
+
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow {
+            position: fixed;
+            top: -30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 600px;
+            background: radial-gradient(ellipse, rgba(99,179,237,0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
             text-align: center;
-            max-width: 800px;
-            width: 90%;
+            margin-bottom: 2.5rem;
+            padding-top: 1rem;
         }
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--gradient-2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 4px 20px rgba(99, 179, 237, 0.25);
+        }
+
+        .logo-text {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #e8e8ed 0%, #a0a0b8 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
         }
+
         .subtitle {
-            color: #aaa;
-            margin-bottom: 2rem;
+            color: var(--text-secondary);
             font-size: 0.9rem;
+            font-weight: 400;
+            letter-spacing: 0.02em;
         }
-        #text-display {
+
+        .lang-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 1rem;
+            padding: 0.35rem 0.85rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .lang-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .main-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             padding: 2rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            font-size: 1.5rem;
-            min-height: 120px;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(20px);
+            transition: border-color 0.3s ease;
+        }
+
+        .main-card.active {
+            border-color: var(--border-active);
+            box-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        .text-area {
+            min-height: 160px;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(10px);
-            transition: opacity 0.3s ease;
-            line-height: 1.6;
+            font-size: 1.6rem;
+            line-height: 1.8;
+            font-weight: 400;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            padding: 1rem;
+            border-radius: var(--radius-sm);
         }
-        #text-display.rtl {
+
+        .text-area.rtl {
             direction: rtl;
             text-align: right;
-            font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+            font-family: var(--font-arabic);
+            font-size: 1.8rem;
+            line-height: 2;
         }
-        .placeholder { color: #666; }
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn {
-            from { opacity: 0.3; transform: translateY(5px); }
+
+        .text-area.ltr {
+            direction: ltr;
+            text-align: left;
+        }
+
+        .placeholder {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 300;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .placeholder-icon {
+            width: 48px;
+            height: 48px;
+            border: 2px dashed var(--text-muted);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            opacity: 0.5;
+        }
+
+        .text-line {
+            animation: textAppear 0.4s ease-out;
+        }
+
+        @keyframes textAppear {
+            from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .status {
-            margin-top: 1rem;
-            font-size: 0.8rem;
-            color: #666;
+
+        .visualizer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            height: 32px;
+            margin-top: 1.25rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        .status-dot {
-            display: inline-block;
-            width: 8px;
+
+        .visualizer.active { opacity: 1; }
+
+        .viz-bar {
+            width: 3px;
             height: 8px;
-            border-radius: 50%;
-            margin-right: 6px;
-            vertical-align: middle;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: height 0.1s ease;
         }
-        .connected { background: #4caf50; }
-        .disconnected { background: #f44336; }
+
+        .bottom-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--red);
+            transition: background 0.3s ease;
+        }
+
+        .status-dot.connected {
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(104, 211, 145, 0.5);
+        }
+
+        .mic-info {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .history-section {
+            margin-top: 0.5rem;
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .history-title {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .history-clear {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.25rem 0.6rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-clear:hover {
+            color: var(--text-primary);
+            border-color: rgba(255,255,255,0.15);
+            background: var(--bg-card-hover);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            max-height: 200px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+
+        .history-list::-webkit-scrollbar { width: 4px; }
+        .history-list::-webkit-scrollbar-track { background: transparent; }
+        .history-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+
+        .history-item {
+            padding: 0.6rem 0.85rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .history-item.rtl {
+            direction: rtl;
+            text-align: right;
+            font-family: var(--font-arabic);
+        }
+
+        .history-item .time {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .empty-history {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem 0 1rem;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        footer a:hover { color: var(--accent); }
+
+        @media (max-width: 600px) {
+            .app { padding: 1rem; }
+            .main-card { padding: 1.25rem; }
+            .text-area { font-size: 1.2rem; min-height: 120px; }
+            .text-area.rtl { font-size: 1.4rem; }
+            .bottom-bar { flex-direction: column; align-items: flex-start; }
+        }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>AuraVision</h1>
-        <p class="subtitle">Real-Time Speech-to-Text</p>
-        <div id="text-display">
-            <span class="placeholder">Waiting for speech input...</span>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <div class="app">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">👁️‍🗨️</div>
+                <span class="logo-text">AuraVision</span>
+            </div>
+            <p class="subtitle">Real-Time Speech-to-Text</p>
+            <div class="lang-badge">
+                <span class="dot"></span>
+                <span id="lang-label">Waiting for input...</span>
+            </div>
+        </header>
+
+        <div class="main-card" id="main-card">
+            <div class="text-area ltr" id="text-display">
+                <div class="placeholder">
+                    <div class="placeholder-icon">🎙️</div>
+                    <span>Waiting for speech input...</span>
+                </div>
+            </div>
+            <div class="visualizer" id="visualizer"></div>
         </div>
-        <div class="status">
-            <span id="status-dot" class="status-dot disconnected"></span>
-            <span id="status-text">Connecting...</span>
+
+        <div class="bottom-bar">
+            <div class="status">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="status-text">Connecting...</span>
+            </div>
+            <div class="mic-info">
+                <span>🎤</span>
+                <span id="mic-text">Microphone active</span>
+            </div>
         </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <span class="history-title">Transcript</span>
+                <button class="history-clear" id="clear-btn" onclick="clearHistory()">Clear</button>
+            </div>
+            <div class="history-list" id="history-list">
+                <div class="empty-history" id="empty-history">No transcripts yet</div>
+            </div>
+        </div>
+
+        <footer>
+            AuraVision &mdash; Helping the deaf and hard-of-hearing community
+            &middot; <a href="https://github.com/Rfannn/AuraVision" target="_blank">GitHub</a>
+        </footer>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
     <script>
         var textDisplay = document.getElementById('text-display');
         var statusDot = document.getElementById('status-dot');
         var statusText = document.getElementById('status-text');
-        var currentLang = new URLSearchParams(window.location.search).get('lang') || 'en';
+        var langLabel = document.getElementById('lang-label');
+        var mainCard = document.getElementById('main-card');
+        var historyList = document.getElementById('history-list');
+        var emptyHistory = document.getElementById('empty-history');
+        var visualizer = document.getElementById('visualizer');
+
+        var currentLang = 'en';
+        var history = [];
+
+        var langNames = {
+            'en': 'English',
+            'es': 'Spanish',
+            'fa': 'Farsi',
+            'unknown': 'Unknown'
+        };
+
+        // Create visualizer bars
+        for (var i = 0; i < 24; i++) {
+            var bar = document.createElement('div');
+            bar.className = 'viz-bar';
+            visualizer.appendChild(bar);
+        }
+
+        function animateVisualizer() {
+            if (!visualizer.classList.contains('active')) return;
+            var bars = visualizer.querySelectorAll('.viz-bar');
+            bars.forEach(function(bar) {
+                var h = Math.random() * 24 + 4;
+                bar.style.height = h + 'px';
+            });
+            requestAnimationFrame(function() {
+                setTimeout(animateVisualizer, 100);
+            });
+        }
+
+        function setLang(lang) {
+            currentLang = lang;
+            var isRtl = lang === 'fa';
+            textDisplay.className = 'text-area ' + (isRtl ? 'rtl' : 'ltr');
+            langLabel.textContent = langNames[lang] || lang;
+        }
+
+        function timeNow() {
+            return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function addHistory(text, lang) {
+            if (emptyHistory) emptyHistory.style.display = 'none';
+
+            var item = document.createElement('div');
+            item.className = 'history-item' + (lang === 'fa' ? ' rtl' : '');
+            item.innerHTML = '<div>' + escapeHtml(text) + '</div><div class="time">' + timeNow() + '</div>';
+            historyList.prepend(item);
+
+            history.unshift({ text: text, lang: lang, time: Date.now() });
+            if (history.length > 100) {
+                history.pop();
+                if (historyList.lastChild && historyList.lastChild.id !== 'empty-history') {
+                    historyList.removeChild(historyList.lastChild);
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function clearHistory() {
+            history = [];
+            historyList.innerHTML = '';
+            if (emptyHistory) {
+                historyList.appendChild(emptyHistory);
+                emptyHistory.style.display = '';
+            }
+        }
 
         var socket = io();
 
         socket.on('connect', function() {
             statusDot.className = 'status-dot connected';
             statusText.textContent = 'Connected';
+            visualizer.classList.add('active');
+            animateVisualizer();
         });
 
         socket.on('disconnect', function() {
-            statusDot.className = 'status-dot disconnected';
+            statusDot.className = 'status-dot';
             statusText.textContent = 'Disconnected';
+            visualizer.classList.remove('active');
+        });
+
+        socket.on('lang_change', function(data) {
+            setLang(data.lang);
         });
 
         socket.on('update_text', function(data) {
-            textDisplay.textContent = data.text;
-            textDisplay.className = 'fade-in' + (currentLang === 'fa' ? ' rtl' : '');
+            var text = data.text;
+            var lang = data.lang || currentLang;
+
+            if (lang !== currentLang) setLang(lang);
+
+            textDisplay.innerHTML = '<span class="text-line">' + escapeHtml(text) + '</span>';
+            mainCard.classList.add('active');
+            setTimeout(function() { mainCard.classList.remove('active'); }, 1500);
+
+            addHistory(text, lang);
         });
+
+        setLang('en');
     </script>
 </body>
 </html>
