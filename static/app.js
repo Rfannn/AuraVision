@@ -110,7 +110,11 @@ var AuraVision = (function () {
             });
 
         micSelect.addEventListener('change', function () {
-            startMicLevel(parseInt(micSelect.value, 10));
+            var idx = parseInt(micSelect.value, 10);
+            startMicLevel(idx);
+            if (socket && socket.connected) {
+                socket.emit('set_mic', { mic_index: idx });
+            }
         });
     }
 

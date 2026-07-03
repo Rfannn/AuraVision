@@ -6,6 +6,7 @@ import logging
 from typing import Any, Optional
 
 import pyaudio
+import socketio
 from vosk import Model, KaldiRecognizer
 import colorama
 from colorama import Fore, Style
@@ -30,9 +31,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger("auravision.main")
 
-FLASK_SERVER_URL = f"http://localhost:{FLASK_PORT}/update"
+FLASK_BASE_URL = f"http://localhost:{FLASK_PORT}"
+FLASK_SERVER_URL = f"{FLASK_BASE_URL}/update"
 
 stop_event = threading.Event()
+mic_lock = threading.Lock()
+current_stream: Optional[pyaudio.Stream] = None
+current_mic: Optional[pyaudio.PyAudio] = None
+current_mic_index: Optional[int] = None
 
 
 def get_headers() -> dict[str, str]:
@@ -61,9 +67,19 @@ def send_text(text: str, lang: str, partial: bool = False) -> None:
         print(Fore.RED + f"Failed to send text: {e}" + Style.RESET_ALL)
 
 
-def process_audio(recognizer: KaldiRecognizer, stream: pyaudio.Stream, lang: str) -> None:
+def process_audio(recognizer: KaldiRecognizer, lang: str) -> None:
+    global current_stream, current_mic
+
     last_final = ""
     while not stop_event.is_set():
+        with mic_lock:
+            stream = current_stream
+            pa = current_mic
+
+        if stream is None or pa is None:
+            stop_event.wait(0.1)
+            continue
+
         try:
             data = stream.read(FRAMES_PER_BUFFER, exception_on_overflow=False)
             if recognizer.AcceptWaveform(data):
@@ -77,9 +93,87 @@ def process_audio(recognizer: KaldiRecognizer, stream: pyaudio.Stream, lang: str
                 partial_text = partial.get("partial", "").strip()
                 if partial_text and partial_text != last_final:
                     send_text(partial_text, lang, partial=True)
-        except OSError as e:
-            print(Fore.RED + f"Audio stream error: {e}" + Style.RESET_ALL)
-            break
+        except OSError:
+            stop_event.wait(0.1)
+        except Exception as e:
+            logger.error("Audio error: %s", e)
+            stop_event.wait(0.1)
+
+
+def switch_mic(new_index: int) -> None:
+    global current_stream, current_mic, current_mic_index
+
+    with mic_lock:
+        if new_index == current_mic_index:
+            return
+
+        if current_stream:
+            try:
+                current_stream.stop_stream()
+                current_stream.close()
+            except Exception:
+                pass
+
+        if current_mic:
+            try:
+                current_mic.terminate()
+            except Exception:
+                pass
+
+        try:
+            pa = pyaudio.PyAudio()
+            info = pa.get_device_info_by_index(new_index)
+            name = info["name"]
+            stream = pa.open(
+                format=pyaudio.paInt16,
+                channels=AUDIO_CHANNELS,
+                rate=AUDIO_RATE,
+                input=True,
+                frames_per_buffer=FRAMES_PER_BUFFER,
+                input_device_index=new_index,
+            )
+            stream.start_stream()
+            current_mic = pa
+            current_stream = stream
+            current_mic_index = new_index
+            print(Fore.GREEN + f"\n  Switched to: {name}" + Style.RESET_ALL)
+        except Exception as e:
+            print(Fore.RED + f"\n  Failed to switch mic: {e}" + Style.RESET_ALL)
+
+
+def start_mic(index: Optional[int]) -> None:
+    global current_stream, current_mic, current_mic_index
+
+    pa = pyaudio.PyAudio()
+
+    if index is None:
+        try:
+            info = pa.get_default_input_device_info()
+            index = info["index"]
+        except OSError:
+            print(Fore.RED + "No microphone found." + Style.RESET_ALL)
+            pa.terminate()
+            return
+
+    try:
+        info = pa.get_device_info_by_index(index)
+        name = info["name"]
+        stream = pa.open(
+            format=pyaudio.paInt16,
+            channels=AUDIO_CHANNELS,
+            rate=AUDIO_RATE,
+            input=True,
+            frames_per_buffer=FRAMES_PER_BUFFER,
+            input_device_index=index,
+        )
+        stream.start_stream()
+        current_mic = pa
+        current_stream = stream
+        current_mic_index = index
+        print(Fore.CYAN + f"  Microphone: {name}" + Style.RESET_ALL)
+    except Exception as e:
+        print(Fore.RED + f"  Failed to open mic: {e}" + Style.RESET_ALL)
+        pa.terminate()
 
 
 def choose_model() -> dict[str, str]:
@@ -110,20 +204,6 @@ def choose_model() -> dict[str, str]:
         print(Fore.RED + f"Invalid choice. Enter a number between 1 and {len(models)}." + Style.RESET_ALL)
 
 
-def get_default_mic() -> Optional[int]:
-    pa = pyaudio.PyAudio()
-    try:
-        idx = pa.get_default_input_device_info()["index"]
-        name = pa.get_device_info_by_index(idx)["name"]
-        print(Fore.CYAN + f"  Microphone: {name}" + Style.RESET_ALL)
-        return idx
-    except OSError:
-        print(Fore.YELLOW + "  No default microphone found" + Style.RESET_ALL)
-        return None
-    finally:
-        pa.terminate()
-
-
 def main() -> None:
     print(Fore.CYAN + "=" * 50 + Style.RESET_ALL)
     print(Fore.CYAN + "  AuraVision - Real-Time Speech-to-Text" + Style.RESET_ALL)
@@ -134,38 +214,59 @@ def main() -> None:
     model_path = selected["path"]
     lang = selected["lang"]
 
-    mic_index = get_default_mic()
-
     print()
     print(Fore.GREEN + f"Loading: {selected['name']}..." + Style.RESET_ALL)
     model = Model(model_path)
     recognizer = KaldiRecognizer(model, AUDIO_RATE)
-    print(Fore.GREEN + "Model loaded." + Style.RESET_ALL)
+    print(Fore.GREEN + "Model loaded.\n" + Style.RESET_ALL)
 
-    mic = pyaudio.PyAudio()
-    stream = mic.open(
-        format=pyaudio.paInt16,
-        channels=AUDIO_CHANNELS,
-        rate=AUDIO_RATE,
-        input=True,
-        frames_per_buffer=FRAMES_PER_BUFFER,
-        input_device_index=mic_index,
-    )
-    stream.start_stream()
+    start_mic(None)
+
+    sio = socketio.Client()
+
+    @sio.on("set_mic")
+    def on_set_mic(data: dict[str, Any]) -> None:
+        idx = data.get("mic_index")
+        if idx is not None:
+            switch_mic(int(idx))
+
+    @sio.on("connect")
+    def on_connect() -> None:
+        print(Fore.GREEN + "  Connected to server" + Style.RESET_ALL)
+
+    @sio.on("disconnect")
+    def on_disconnect() -> None:
+        print(Fore.YELLOW + "  Disconnected from server" + Style.RESET_ALL)
+
+    try:
+        sio.connect(FLASK_BASE_URL)
+    except Exception as e:
+        print(Fore.YELLOW + f"  Could not connect to server: {e}" + Style.RESET_ALL)
 
     print(Fore.GREEN + "Listening... Press Ctrl+C to stop.\n" + Style.RESET_ALL)
 
-    audio_thread = threading.Thread(
-        target=process_audio, args=(recognizer, stream, lang), daemon=True
-    )
+    audio_thread = threading.Thread(target=process_audio, args=(recognizer, lang), daemon=True)
     audio_thread.start()
 
     def shutdown(sig: int, frame: object) -> None:
         print(Fore.RED + "\nExiting..." + Style.RESET_ALL)
         stop_event.set()
-        stream.stop_stream()
-        stream.close()
-        mic.terminate()
+        with mic_lock:
+            if current_stream:
+                try:
+                    current_stream.stop_stream()
+                    current_stream.close()
+                except Exception:
+                    pass
+            if current_mic:
+                try:
+                    current_mic.terminate()
+                except Exception:
+                    pass
+        try:
+            sio.disconnect()
+        except Exception:
+            pass
         sys.exit(0)
 
     signal.signal(signal.SIGINT, shutdown)

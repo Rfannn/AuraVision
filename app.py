@@ -121,5 +121,11 @@ def on_disconnect() -> None:
     logger.debug("Client disconnected")
 
 
+@socketio.on("set_mic")
+def on_set_mic(data: dict[str, Any]) -> None:
+    logger.info("Mic change requested: %s", data)
+    socketio.emit("set_mic", data)
+
+
 if __name__ == "__main__":
     socketio.run(app, host=FLASK_HOST, port=FLASK_PORT, debug=FLASK_DEBUG)
