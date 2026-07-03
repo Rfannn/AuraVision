@@ -5,10 +5,11 @@ Real-time speech-to-text tool for the deaf and hard-of-hearing community. Conver
 ## Features
 
 - **Real-time speech recognition** powered by Vosk
-- **Multi-language support** — English, Spanish, Farsi
-- **RTL support** — proper right-to-left rendering for Farsi
-- **Web interface** — live text display with fade-in animation via WebSocket
+- **Multi-language support** — English, Spanish, Farsi (auto-detect)
+- **RTL support** — proper right-to-left rendering for Farsi with Noto Sans Arabic font
+- **Web interface** — dark theme, audio visualizer, transcript history
 - **Cross-platform** — Windows, Linux, macOS
+- **Docker** — containerized web server with docker-compose
 - **Configurable** — environment variables for port, debug, secret key, and logging
 
 ## Quick Start
@@ -43,12 +44,10 @@ Download from [Vosk Models](https://alphacephei.com/vosk/models) and extract int
 | Spanish | [vosk-model-small-es-0.42](https://alphacephei.com/vosk/models/vosk-model-small-es-0.42.zip) | 39 MB |
 | Farsi | [vosk-model-small-fa-0.5](https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip) | 47 MB |
 
-Example:
 ```bash
-# Download and extract Farsi model
+# Example: download and extract Farsi model
 curl -O https://alphacephei.com/vosk/models/vosk-model-small-fa-0.5.zip
 unzip vosk-model-small-fa-0.5.zip -d models/
-# Now you have models/vosk-model-small-fa-0.5/
 ```
 
 ### Run
@@ -56,6 +55,10 @@ unzip vosk-model-small-fa-0.5.zip -d models/
 Start the web server and speech recognition in separate terminals:
 
 ```bash
+# Terminal 1 - Web server
+source venv/bin/activate   # or venv\Scripts\activate on Windows
+python app.py
+
 # Terminal 2 - Speech recognition (shows model picker)
 source venv/bin/activate
 python main.py
@@ -64,6 +67,22 @@ python main.py
 When you run `main.py`, it scans the `models/` directory and shows a numbered list of all available models. Pick one by entering its number.
 
 Open [http://localhost:5000](http://localhost:5000) in your browser.
+
+### Docker
+
+Run the web server in a container:
+
+```bash
+# Build and run
+docker compose up --build
+
+# Or run in background
+docker compose up --build -d
+```
+
+The `models/` directory is mounted as a volume, so you can add/remove models on the host.
+
+> **Note:** `main.py` (speech recognition) must run on the host machine since it needs microphone access. Docker runs the web server only.
 
 ### Configuration
 
@@ -84,12 +103,16 @@ AuraVision/
 ├── main.py             # Microphone input + Vosk speech recognition
 ├── config.py           # Centralized configuration
 ├── requirements.txt    # Python dependencies
+├── Dockerfile          # Container image for web server
+├── docker-compose.yml  # Docker Compose config
 ├── templates/
-│   └── index.html      # Web UI with live text display
+│   └── index.html      # Web UI (dark theme, RTL, visualizer)
 ├── models/             # Vosk model files (gitignored)
 ├── init.sh             # Setup script (Linux/macOS)
 ├── init.bat            # Setup script (Windows)
 ├── .env.example        # Environment variable template
+├── CONTRIBUTING.md     # Contribution guidelines
+├── ROADMAP.md          # Feature roadmap
 └── LICENSE             # MIT License
 ```
 
@@ -98,7 +121,8 @@ AuraVision/
 - **Speech recognition:** [Vosk](https://alphacephei.com/vosk/)
 - **Web framework:** Flask + Flask-SocketIO
 - **Audio:** PyAudio
-- **Frontend:** Vanilla JS + Socket.IO client
+- **Frontend:** Vanilla JS + Socket.IO, Google Fonts (Inter + Noto Sans Arabic)
+- **Containerization:** Docker + Docker Compose
 
 ## Roadmap
 

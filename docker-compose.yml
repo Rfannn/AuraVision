@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - AV_PORT=5000
+      - AV_DEBUG=false
+      - AV_LOG_LEVEL=ERROR
+    volumes:
+      - ./models:/app/models
+    restart: unless-stopped

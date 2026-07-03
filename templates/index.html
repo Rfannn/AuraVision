@@ -450,7 +450,7 @@
         var visualizer = document.getElementById('visualizer');
 
         var currentLang = 'en';
-        var history = [];
+        var transcriptLog = [];
 
         var langNames = {
             'en': 'English',
@@ -497,9 +497,9 @@
             item.innerHTML = '<div>' + escapeHtml(text) + '</div><div class="time">' + timeNow() + '</div>';
             historyList.prepend(item);
 
-            history.unshift({ text: text, lang: lang, time: Date.now() });
-            if (history.length > 100) {
-                history.pop();
+            transcriptLog.unshift({ text: text, lang: lang, time: Date.now() });
+            if (transcriptLog.length > 100) {
+                transcriptLog.pop();
                 if (historyList.lastChild && historyList.lastChild.id !== 'empty-history') {
                     historyList.removeChild(historyList.lastChild);
                 }
@@ -513,7 +513,7 @@
         }
 
         function clearHistory() {
-            history = [];
+            transcriptLog = [];
             historyList.innerHTML = '';
             if (emptyHistory) {
                 historyList.appendChild(emptyHistory);
